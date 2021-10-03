@@ -1,0 +1,70 @@
+stages:
+  - stage: validate
+    jobs:
+      - job: validate
+        continueOnError: false
+        steps:
+          - task: TerrafromInstaller@0
+            inputs:
+              terraformVersion: '0.12.26'
+          - task: TerraformTaskV1@0
+            displayname: 'init'
+              inputs:
+                provider: 'azurerm'
+                command: 'init'
+                backendServiceArm: 'azure-spn'
+                backendAzureRmResourceGroupName: 'terraform-rg'
+                backendAzureRmStorageAccountName: 'sktfaccount'
+                backendAzureRmContainerName: 'sktfcontainer'
+                backendAzureRmKey: 'terraform.tfstate'
+          - task: TerraformTaskV1@0
+            displayname: 'validate'
+            inputs:
+              provider: 'azurerm'
+              command: 'validate'
+  - stage: deploy
+    jobs:
+    - deployments: deploy_terraform
+      continueOnError: false
+      environment: 'dev'
+      strategy:
+        runOnce:
+          deploy:
+            -steps:
+              - checkout: self
+              - task: TerraformInstaller@0
+                displayName: 'install'
+                inputs:
+                  terraformVersion: '0.12.26'
+              - task: TerraformTaskV1@0
+                displayName: 'init'
+                input:
+                  provider: 'azurerm'
+                  command: 'init'
+                  backendServiceArm: 'azure-spn'
+                  backendAzureRmResourceGroupName: 'terraform-rg'
+                  backedAsureRmStorageAccountName: 'sktfcontainer'
+                  backendAzureRmKey: 'terraform.tfstate'
+              
+              - task: TerraformTaskV1@0
+                displayname: 'plan'
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'plan'
+                    environmentServiceNameAzureRM: 'azure-spn'
+
+              - task: TerraformTaskV1@0
+                displayName: 'apply'
+                inputs:
+                  provider: 'azurerm'
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'apply'
+                    environmentServiceNameAzureRM: 'azure-spn'
+
+
+        
+
+                
+
+
